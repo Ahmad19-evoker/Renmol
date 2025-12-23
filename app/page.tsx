@@ -1,6 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Star, Zap, Shield, MapPin, Phone, Mail, Instagram, Facebook, Twitter } from "lucide-react";
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// ... import dan kode lainnya ...
 
 // Hapus import Heart karena kartunya dihapus
 // import { Heart } from "lucide-react"; 
