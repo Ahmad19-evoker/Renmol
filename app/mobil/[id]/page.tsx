@@ -7,13 +7,18 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { ArrowLeft, Users, Settings2, Fuel, Calendar, CheckCircle, MapPin, AlertCircle } from "lucide-react";
 import BookingForm from "./BookingForm"; 
 
-export default async function CarDetailPage({ params }: { params: { id: string } }) {
+// PERBAIKAN 1: Tambahkan Promise<...> di tipe data params
+export default async function CarDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  
+  // PERBAIKAN 2: Kita harus 'await' params-nya dulu untuk mengambil ID
+  const { id } = await params;
+
   // 1. Ambil Session User
   const session = await getServerSession(authOptions);
   
-  // 2. Ambil data mobil berdasarkan ID di URL
+  // 2. Ambil data mobil pakai 'id' yang sudah di-await tadi
   const car = await prisma.car.findUnique({
-    where: { id: params.id },
+    where: { id: id }, // Gunakan variabel 'id', bukan 'params.id'
   });
 
   // Jika mobil tidak ditemukan di database
