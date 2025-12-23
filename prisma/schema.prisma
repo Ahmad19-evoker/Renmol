@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// MODEL USER
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  // Relasi: Satu User bisa punya banyak Order
+  orders Order[] // <--- WAJIB ADA (Ini menghubungkan User ke Order)
+}
+
+// MODEL CAR (MOBIL)
+model Car {
+  id           String   @id @default(cuid())
+  name         String
+  image        String
+  price        Int
+  type         String
+  passengers   Int
+  transmission String
+  fuel         String
+  createdAt    DateTime @default(now())
+
+  // Relasi: Satu Mobil bisa punya banyak Order (disewa berkali-kali)
+  orders Order[] // <--- WAJIB ADA (Ini menghubungkan Car ke Order)
+}
+
+// MODEL ORDER (PESANAN) - BARU
+model Order {
+  id            String   @id @default(cuid())
+  userId        String
+  carId         String
+  startDate     DateTime
+  endDate       DateTime
+  totalPrice    Int
+  status        String   @default("PENDING") // ACTIVE, COMPLETED, CANCELLED
+  
+  // FIELD BARU
+  withDriver    Boolean  @default(false)
+  paymentMethod String   @default("TRANSFER_BCA")
+  
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car  Car  @relation(fields: [carId], references: [id], onDelete: Cascade)
+}
+
