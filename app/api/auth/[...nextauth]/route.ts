@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 export const authOptions: AuthOptions = {
+  // 1. Konfigurasi Provider
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -30,39 +31,53 @@ export const authOptions: AuthOptions = {
           throw new Error("Password salah");
         }
 
-        // Return data user (termasuk ID)
+        // --- PERBAIKAN PENTING DI SINI ---
+        // Kita WAJIB mengembalikan 'role' di sini agar bisa ditangkap oleh callback JWT
         return {
-          id: user.id, // PENTING: Kita kembalikan ID di sini
+          id: user.id,
           name: user.name,
           email: user.email,
+          role: user.role, // <--- Jangan lupa ini!
         };
       }
     })
   ],
-  callbacks: {
-    // 1. Saat login berhasil, masukkan ID ke Token JWT
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-    // 2. Saat sesi dibaca di frontend/backend, ambil ID dari Token JWT
-    async session({ session, token }) {
-      if (session?.user) {
-        // @ts-ignore
-        session.user.id = token.id; // Masukkan ID ke session
-      }
-      return session;
-    }
-  },
+
+  // 2. Konfigurasi Session
   session: {
     strategy: "jwt",
   },
+
+  // 3. Secret Key
   secret: process.env.NEXTAUTH_SECRET,
+
+  // 4. Halaman Login Custom
   pages: {
     signIn: "/login",
-  }
+  },
+
+  // 5. Callbacks (Digabung jadi satu)
+  callbacks: {
+    // Tahap A: Masukkan data dari User ke Token (saat login pertama)
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role; // Simpan role ke token
+      }
+      return token;
+    },
+
+    // Tahap B: Masukkan data dari Token ke Session (saat frontend butuh data)
+    async session({ session, token }) {
+      if (session.user) {
+        // @ts-ignore
+        session.user.id = token.id;
+        // @ts-ignore
+        session.user.role = token.role; // Masukkan role ke session
+      }
+      return session;
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);

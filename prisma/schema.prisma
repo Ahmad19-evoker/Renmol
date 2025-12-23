@@ -7,51 +7,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// MODEL USER
+// 1. INI YANG BARU KITA TAMBAHKAN (ROLE)
+enum Role {
+  USER
+  ADMIN
+}
+
+// 2. MODEL USER (UPDATE DENGAN ROLE)
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(USER) // <--- Kolom Role
 
-  // Relasi: Satu User bisa punya banyak Order
-  orders Order[] // <--- WAJIB ADA (Ini menghubungkan User ke Order)
+  accounts      Account[]
+  sessions      Session[]
+  orders        Order[]   
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
-// MODEL CAR (MOBIL)
-model Car {
-  id           String   @id @default(cuid())
-  name         String
-  image        String
-  price        Int
-  type         String
-  passengers   Int
-  transmission String
-  fuel         String
-  createdAt    DateTime @default(now())
-
-  // Relasi: Satu Mobil bisa punya banyak Order (disewa berkali-kali)
-  orders Order[] // <--- WAJIB ADA (Ini menghubungkan Car ke Order)
-}
-
-// MODEL ORDER (PESANAN) - BARU
-model Order {
-  id            String   @id @default(cuid())
-  userId        String
-  carId         String
-  startDate     DateTime
-  endDate       DateTime
-  totalPrice    Int
-  status        String   @default("PENDING") // ACTIVE, COMPLETED, CANCELLED
-  
-  // FIELD BARU
-  withDriver    Boolean  @default(false)
-  paymentMethod String   @default("TRANSFER_BCA")
-  
-  createdAt     DateTime @default(now())
+// 3. MODEL ACCOUNT (WAJIB ADA UNTUK NEXTAUTH) - MUNGKIN INI YANG HILANG
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  car  Car  @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
 }
 
+// 4. MODEL SESSION (WAJIB ADA UNTUK NEXTAUTH) - MUNGKIN INI JUGA HILANG
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ... Pastikan Model Car dan Order Anda tetap ada di bawah sini ...
+// Contoh singkat (jangan dihapus punya Anda):
+model Car {
+  id        String   @id @default(cuid())
+  name      String
+  // ... kolom lainnya ...
+  orders    Order[]
+}
+
+model Order {
+  id        String   @id @default(cuid())
+  // ... kolom lainnya ...
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  car       Car      @relation(fields: [carId], references: [id])
+  carId     String
+}
